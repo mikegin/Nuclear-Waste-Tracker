@@ -55,10 +55,10 @@ new_phase(pid, phase_name, capacity, expected_materials) ==
     /\ expected_materials = {MATERIAL}
     /\ phases' = phases \union phase_name
     /\ pid_to_phase' = [pid_to_phase EXCEPT ![pid].phase_name = phase_name, ![pid].capacity = capacity, ![pid].expected_materials = expected_materials]
-
+    /\ UNCHANGED <<containers, cid_to_container, cid_to_pid>>
 -------
 
 =============================================================================
 \* Modification History
-\* Last modified Sat Nov 25 18:28:47 EST 2017 by mikegin
+\* Last modified Sat Nov 25 18:51:16 EST 2017 by mikegin
 \* Created Sat Nov 25 16:49:51 EST 2017 by mikegin
