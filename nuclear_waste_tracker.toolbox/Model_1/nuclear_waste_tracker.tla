@@ -17,13 +17,12 @@ MATERIAL == {"glass", "metal", "plastic", "liquid"}
 PHASE ==  [ phase_name: PHASE_NAME
           , capacity: Int
           , expected_materials: {MATERIAL}
-          , container_count: Int
-          , current_rad: VALUE
+          , current_rad: Int
           ]
           
 \* set of all container records
 CONTAINER ==  [ material: MATERIAL
-              , radioactivity: VALUE
+              , radioactivity: Int
               ] 
 VARIABLES
     PID \* registered phases
@@ -70,7 +69,6 @@ new_phase(pid, phase_name, capacity, expected_materials) ==
         phases @@ pid :> [ phase_name |-> phase_name
                          , capacity |-> capacity
                          , expected_materials |-> expected_materials
-                         , container_count |-> 0
                          , current_rad |-> 0
                          ]
     /\ UNCHANGED <<CID, containers, container_phase, maximum_phase_radiation, maximum_container_radiation>>
@@ -81,16 +79,10 @@ new_container(cid, c, pid) ==
     /\ pid \in PID
     /\ c \in CONTAINER
     /\ c.material \in phases[pid].expected_materials
-    /\ c.radioactivity \in VALUE
-    /\ c.radioactivity > 0
+    /\ c.radioactivity \in Nat
     /\ c.radioactivity <= maximum_container_radiation
     /\ c.radioactivity + phases[pid].current_rad <= maximum_phase_radiation
-    /\ phases[pid].container_count < phases[pid].capacity
-    /\ CID' = CID \union {cid}
-    /\ containers' = containers @@ cid :> c
-    /\ phases' = [phases EXCEPT ![pid].current_rad = @ + c.radioactivity, ![pid].container_count = @ + 1]
-    /\ container_phase' = container_phase @@ cid :> pid
-    /\ UNCHANGED <<PID, maximum_phase_radiation, maximum_container_radiation>>
+    /\ phases' = [phases EXCEPT ![pid].current_rad = @ + c.radioactivity]
 -------
 
 Init == 
@@ -116,5 +108,5 @@ Next ==
         
 =============================================================================
 \* Modification History
-\* Last modified Wed Dec 06 18:00:48 EST 2017 by mikegin
+\* Last modified Wed Dec 06 17:35:39 EST 2017 by mikegin
 \* Created Sat Nov 25 16:49:51 EST 2017 by mikegin
