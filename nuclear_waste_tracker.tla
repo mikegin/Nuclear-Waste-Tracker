@@ -30,9 +30,32 @@ VARIABLES
     , CID  \* registered containers
     , containers \* mapping of cid's to container attributes
     , phases \* mapping of pid's to phase attributes
-    , container_phase \* mapping of cid's to pid'
+    , container_phase \* mapping of cid's to pid's
     , maximum_phase_radiation \* max phase radiation
     , maximum_container_radiation \* max container radiation
+    
+-------
+\* Helpers
+Range(f) ==
+    {f[x] : x \in DOMAIN f}
+
+RangeRes(f, S) ==
+    [x \in {z \in DOMAIN f: f[z] \in S} |-> f[x]]
+
+DomainRes(f, S) ==
+    [x \in (S \intersect DOMAIN f) |-> f[x]]
+    
+DomainSub(f, S) ==
+    [x \in DOMAIN f \ S |-> f[x]]
+
+
+RECURSIVE SetSum(_)
+SetSum(S) ==
+    IF S = {}
+    THEN 0
+    ELSE LET x == CHOOSE x \in S : TRUE
+         IN  x + SetSum(S \ {x})
+
 -------
 \* Invariants
 
@@ -45,6 +68,20 @@ TypeOK == \* Well Definedness
     /\ maximum_phase_radiation \in VALUE
     /\ maximum_container_radiation \in VALUE
     
+
+
+\* consistent variables == (dom containers = dom container_phase) /\ (dom phases = range container_phase)
+
+\* Sum of all radiations of containers in a phase equals current_rad
+\* \A pid \in DOMAIN phases, SUM({\A cid \in DOMAIN RangeResBy(container_phase, {pid}), containers[cid].radioactivity}) = phases[pid].current_rad
+\*ConsistentCurrentRad ==
+\*    (\A pid \in DOMAIN phases : SetSum({containers[cid].radioactivity : cid \in DOMAIN RangeRes(container_phase, pid)}) = phases[pid].current_rad)
+
+\* Current_rad <= maximum_phase_radiation
+CurrentRadCorrect ==
+    (\A p \in Range(phases) : p.current_rad <= maximum_phase_radiation)
+
+\* Every container has radiation <= maximum_container_radiation
 
 -------
 \* Actions
@@ -74,6 +111,7 @@ new_phase(pid, phase_name, capacity, expected_materials) ==
                          , current_rad |-> 0
                          ]
     /\ UNCHANGED <<CID, containers, container_phase, maximum_phase_radiation, maximum_container_radiation>>
+\*    /\ Print (Range(phases'), TRUE)
 
 new_container(cid, c, pid) ==
     /\ cid \in U_CID
@@ -91,6 +129,20 @@ new_container(cid, c, pid) ==
     /\ phases' = [phases EXCEPT ![pid].current_rad = @ + c.radioactivity, ![pid].container_count = @ + 1]
     /\ container_phase' = container_phase @@ cid :> pid
     /\ UNCHANGED <<PID, maximum_phase_radiation, maximum_container_radiation>>
+
+remove_phase(pid) ==
+    /\ pid \in PID
+    /\ Cardinality(CID) = 0
+    /\ PID' = PID \ {pid}
+    /\ phases' = DomainSub(phases, {pid})
+    /\ UNCHANGED <<CID, containers, container_phase, maximum_phase_radiation, maximum_container_radiation>>
+    
+remove_container(cid) ==
+    /\ cid \in CID
+    /\ containers' = DomainSub(containers, {cid})
+    /\ container_phase' = DomainSub(container_phase, {cid})
+    /\ CID' = CID \ {cid}
+    
 -------
 
 Init == 
@@ -116,5 +168,5 @@ Next ==
         
 =============================================================================
 \* Modification History
-\* Last modified Wed Dec 06 18:00:48 EST 2017 by mikegin
+\* Last modified Tue Dec 12 19:07:06 EST 2017 by mikegin
 \* Created Sat Nov 25 16:49:51 EST 2017 by mikegin
